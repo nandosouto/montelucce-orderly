@@ -63,8 +63,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      // Aqui estava o problema: usando String como uma função - vamos corrigir para uma conversão adequada
-      link.setAttribute('download', `montelucce_pedidos_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
+      // Corrigindo o problema - usando template string ao invés de chamar String como função
+      const fileName = `montelucce_pedidos_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
