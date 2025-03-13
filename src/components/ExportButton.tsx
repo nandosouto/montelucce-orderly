@@ -64,7 +64,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
       const link = document.createElement('a');
       link.setAttribute('href', url);
       
-      // Fix: Use template literal instead of calling String as a function
+      // Fix: Use template literal for filename instead of calling String as a function
       const fileName = `montelucce_pedidos_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`;
       link.setAttribute('download', fileName);
       
