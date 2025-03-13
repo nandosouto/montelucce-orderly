@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,16 +53,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				}
+                montelucce: {
+                    yellow: '#F5B800',
+                    black: '#121212',
+                    gray: '#8E9196',
+                    'light-gray': '#F6F6F7',
+                    'silver-gray': '#9F9EA1'
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,12 +82,79 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+                'fade-in': {
+                    from: {
+                        opacity: '0',
+                    },
+                    to: {
+                        opacity: '1',
+                    },
+                },
+                'slide-in-right': {
+                    from: {
+                        transform: 'translateX(100%)',
+                        opacity: '0',
+                    },
+                    to: {
+                        transform: 'translateX(0)',
+                        opacity: '1',
+                    },
+                },
+                'slide-in-left': {
+                    from: {
+                        transform: 'translateX(-100%)',
+                        opacity: '0',
+                    },
+                    to: {
+                        transform: 'translateX(0)',
+                        opacity: '1',
+                    },
+                },
+                'slide-in-up': {
+                    from: {
+                        transform: 'translateY(100%)',
+                        opacity: '0',
+                    },
+                    to: {
+                        transform: 'translateY(0)',
+                        opacity: '1',
+                    },
+                },
+                'scale-in': {
+                    from: {
+                        transform: 'scale(0.95)',
+                        opacity: '0',
+                    },
+                    to: {
+                        transform: 'scale(1)',
+                        opacity: '1',
+                    },
+                },
+                'pulse-slow': {
+                    '0%, 100%': {
+                        opacity: '1',
+                    },
+                    '50%': {
+                        opacity: '0.8',
+                    },
+                },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+                'fade-in': 'fade-in 0.5s ease-out forwards',
+                'slide-in-right': 'slide-in-right 0.5s ease-out forwards',
+                'slide-in-left': 'slide-in-left 0.5s ease-out forwards',
+                'slide-in-up': 'slide-in-up 0.5s ease-out forwards',
+                'scale-in': 'scale-in 0.3s ease-out forwards',
+                'pulse-slow': 'pulse-slow 3s infinite',
+			},
+            boxShadow: {
+                'neo': '5px 5px 10px rgba(0, 0, 0, 0.1), -5px -5px 10px rgba(255, 255, 255, 0.05)',
+                'neo-inset': 'inset 5px 5px 10px rgba(0, 0, 0, 0.1), inset -5px -5px 10px rgba(255, 255, 255, 0.05)',
+                'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+            },
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
