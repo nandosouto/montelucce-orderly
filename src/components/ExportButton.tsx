@@ -9,6 +9,8 @@ import {
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu';
 import { Download } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type ExportButtonProps = {
   orders: Order[];
@@ -19,23 +21,23 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
   const handleExport = (format: 'csv' | 'excel') => {
     // In a real app, we'd implement the actual export logic
     // For now, we'll simulate the export with a console log
-    console.log(`Exporting ${orders.length} orders for period: ${selectedPeriod} in ${format} format`);
+    console.log(`Exportando ${orders.length} pedidos para o período: ${selectedPeriod} no formato ${format}`);
     
     // Basic CSV export example
     if (format === 'csv') {
       const headers = [
-        'Customer Name',
+        'Nome do Cliente',
         'Email',
         'CPF',
-        'Address',
-        'Zip Code',
-        'Product Brand',
-        'Product Price',
-        'Shipping Cost',
-        'Date',
-        'Product Cost',
-        'Selling Price',
-        'Profit'
+        'Endereço',
+        'CEP',
+        'Marca do Produto',
+        'Preço do Produto',
+        'Custo de Envio',
+        'Data',
+        'Custo do Produto',
+        'Preço de Venda',
+        'Lucro'
       ].join(',');
 
       const csvRows = orders.map(order => {
@@ -48,7 +50,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
           order.productBrand,
           order.productPrice.toFixed(2),
           order.shippingCost.toFixed(2),
-          new Date(order.date).toLocaleDateString(),
+          new Date(order.date).toLocaleDateString('pt-BR'),
           order.productCost !== undefined ? order.productCost.toFixed(2) : '',
           order.sellingPrice !== undefined ? order.sellingPrice.toFixed(2) : '',
           order.calculatedProfit !== undefined ? order.calculatedProfit.toFixed(2) : ''
@@ -62,7 +64,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `montelucce_orders_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `montelucce_pedidos_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -74,7 +76,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button className="bg-montelucce-yellow text-montelucce-black hover:bg-montelucce-yellow/90">
-          <Download size={16} className="mr-2" /> Export
+          <Download size={16} className="mr-2" /> Exportar
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-montelucce-black border border-montelucce-yellow/20 text-montelucce-light-gray">
@@ -82,13 +84,13 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
           onClick={() => handleExport('csv')}
           className="cursor-pointer hover:text-montelucce-yellow hover:bg-montelucce-yellow/5"
         >
-          Export as CSV
+          Exportar como CSV
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => handleExport('excel')}
           className="cursor-pointer hover:text-montelucce-yellow hover:bg-montelucce-yellow/5"
         >
-          Export as Excel
+          Exportar como Excel
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

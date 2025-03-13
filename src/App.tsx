@@ -9,6 +9,7 @@ import Orders from "./pages/Orders";
 import Calculator from "./components/Calculator";
 import OrderForm from "./pages/OrderForm";
 import NotFound from "./pages/NotFound";
+import Revenue from "./pages/Revenue";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/orders" element={<Orders />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/pedido-form" element={<OrderForm />} />
+          <Route path="/revenue" element={<Revenue />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

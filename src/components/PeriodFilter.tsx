@@ -4,6 +4,7 @@ import { PeriodFilter as PeriodFilterType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type PeriodFilterProps = {
   value: PeriodFilterType;
@@ -12,13 +13,13 @@ type PeriodFilterProps = {
 
 const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange }) => {
   const filters: { value: PeriodFilterType; label: string }[] = [
-    { value: 'today', label: 'Today' },
-    { value: 'yesterday', label: 'Yesterday' },
-    { value: 'last7days', label: 'Last 7 days' },
-    { value: 'last30days', label: 'Last 30 days' },
-    { value: 'last3months', label: 'Last 3 months' },
-    { value: 'last6months', label: 'Last 6 months' },
-    { value: 'lastyear', label: 'Last year' },
+    { value: 'today', label: 'Hoje' },
+    { value: 'yesterday', label: 'Ontem' },
+    { value: 'last7days', label: 'Últimos 7 dias' },
+    { value: 'last30days', label: 'Últimos 30 dias' },
+    { value: 'last3months', label: 'Últimos 3 meses' },
+    { value: 'last6months', label: 'Últimos 6 meses' },
+    { value: 'lastyear', label: 'Último ano' },
   ];
 
   const today = new Date();
@@ -65,8 +66,8 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange }) => {
   }
 
   const dateRangeText = startDate === endDate 
-    ? format(startDate, 'MMM d, yyyy')
-    : `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
+    ? format(startDate, 'd MMM, yyyy', { locale: ptBR })
+    : `${format(startDate, 'd MMM, yyyy', { locale: ptBR })} - ${format(endDate, 'd MMM, yyyy', { locale: ptBR })}`;
 
   return (
     <div className="space-y-4">
@@ -88,7 +89,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange }) => {
         ))}
       </div>
       <div className="text-sm text-montelucce-light-gray/70">
-        <p>Showing data for: <span className="font-medium text-montelucce-yellow">{dateRangeText}</span></p>
+        <p>Mostrando dados para: <span className="font-medium text-montelucce-yellow">{dateRangeText}</span></p>
       </div>
     </div>
   );
