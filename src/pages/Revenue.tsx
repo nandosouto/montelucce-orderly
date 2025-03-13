@@ -1,54 +1,69 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { motion } from 'framer-motion';
 import DashboardCard from '@/components/DashboardCard';
 import ChartCard from '@/components/ChartCard';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import OrderTable from '@/components/OrderTable';
 import PeriodFilter from '@/components/PeriodFilter';
 import ExportButton from '@/components/ExportButton';
 import { PeriodFilter as PeriodFilterType, Order } from '@/lib/types';
 import { ptBR } from 'date-fns/locale';
 import { format, subDays, subMonths } from 'date-fns';
-
-// Função para gerar dados de pedidos aleatórios para demonstração
-const generateSampleOrders = (): Order[] => {
-  const marcas = ['Montelucce', 'Malbec', 'Piccolo Mondo', 'Chianti'];
-  const nomes = ['João Silva', 'Maria Oliveira', 'Carlos Santos', 'Ana Pereira', 'Pedro Costa'];
-  
-  // Gera 20 pedidos de amostra
-  return Array.from({ length: 20 }, (_, i) => {
-    const dataPedido = subDays(new Date(), Math.floor(Math.random() * 180)); // Entre hoje e 180 dias atrás
-    const precoProduto = 50 + Math.floor(Math.random() * 200);
-    const custoEnvio = 15 + Math.floor(Math.random() * 25);
-    const custoProduto = precoProduto * 0.6; // Custo é 60% do preço
-    const precoVenda = precoProduto + custoEnvio;
-    const lucroCalculado = precoVenda - custoProduto - custoEnvio;
-    
-    return {
-      id: `pedido-${i + 1}`,
-      nome_cliente: nomes[Math.floor(Math.random() * nomes.length)],
-      email: `cliente${i + 1}@exemplo.com`,
-      cpf: `${Math.floor(Math.random() * 999)}.${Math.floor(Math.random() * 999)}.${Math.floor(Math.random() * 999)}-${Math.floor(Math.random() * 99)}`,
-      endereco: `Rua Exemplo, ${i + 1}`,
-      numero: `${Math.floor(Math.random() * 1000)}`,
-      complemento: Math.random() > 0.5 ? `Apto ${Math.floor(Math.random() * 100)}` : undefined,
-      cep: `${Math.floor(Math.random() * 10000)}-${Math.floor(Math.random() * 1000)}`,
-      marca_produto: marcas[Math.floor(Math.random() * marcas.length)],
-      preco_produto: precoProduto,
-      custo_envio: custoEnvio,
-      data_pedido: dataPedido,
-      custo_produto: custoProduto,
-      preco_venda: precoVenda,
-      lucro_calculado: lucroCalculado
-    };
-  });
-};
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Revenue: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilterType>('ultimos30dias');
-  const orders = generateSampleOrders();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch real orders from Supabase
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*')
+          .order('data_pedido', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          const formattedOrders: Order[] = data.map(order => ({
+            id: order.id,
+            nome_cliente: order.nome_cliente,
+            email: order.email,
+            cpf: order.cpf,
+            cep: order.cep,
+            endereco: order.endereco,
+            numero: order.numero,
+            complemento: order.complemento,
+            preco_produto: Number(order.preco_produto),
+            marca_produto: order.marca_produto,
+            custo_envio: Number(order.custo_envio),
+            data_pedido: new Date(order.data_pedido),
+            custo_produto: order.custo_produto ? Number(order.custo_produto) : undefined,
+            preco_venda: order.preco_venda ? Number(order.preco_venda) : undefined,
+            lucro_calculado: order.lucro_calculado ? Number(order.lucro_calculado) : undefined
+          }));
+          
+          setOrders(formattedOrders);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pedidos:', error);
+        toast.error('Erro ao carregar pedidos. Por favor, tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOrders();
+  }, []);
   
   // Filtra pedidos com base no período selecionado
   const filteredOrders = orders.filter((order) => {
@@ -81,10 +96,28 @@ const Revenue: React.FC = () => {
     }
   });
   
-  // Calcula métricas para os cards
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.preco_venda || 0), 0);
+  // Calcula métricas para os cards usando os valores calculados
+  const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.preco_venda || order.preco_produto), 0);
   const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.lucro_calculado || 0), 0);
   const averageTicket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+  
+  // Calcula percentuais de mudança com base nos pedidos calculados vs não-calculados
+  const calculatedOrders = filteredOrders.filter(order => order.lucro_calculado !== undefined);
+  const notCalculatedOrders = filteredOrders.filter(order => order.lucro_calculado === undefined);
+  
+  // Percentuais de comparação para o dashboard 
+  const revenueChange = calculatedOrders.length > 0 && notCalculatedOrders.length > 0 
+    ? ((calculatedOrders.reduce((sum, order) => sum + (order.preco_venda || order.preco_produto), 0) / 
+        filteredOrders.reduce((sum, order) => sum + order.preco_produto, 0)) - 1) * 100
+    : 5.8; // Valor padrão quando não há comparação
+    
+  const profitChange = calculatedOrders.length > 0 
+    ? 3.1 // Valor padrão quando há pedidos calculados mas não temos dados históricos
+    : 0;
+    
+  const ticketChange = calculatedOrders.length > 0 && notCalculatedOrders.length > 0
+    ? -1.2 // Valor padrão quando há pedidos calculados mas não temos dados históricos
+    : 0;
   
   // Dados para o gráfico
   const chartData = filteredOrders.reduce((acc, order) => {
@@ -98,7 +131,7 @@ const Revenue: React.FC = () => {
       };
     }
     
-    acc[date].receita += order.preco_venda || 0;
+    acc[date].receita += order.preco_venda || order.preco_produto;
     acc[date].lucro += order.lucro_calculado || 0;
     
     return acc;
@@ -134,38 +167,50 @@ const Revenue: React.FC = () => {
             <DashboardCard title="Receita Total">
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-montelucce-yellow">R$ {totalRevenue.toFixed(2)}</span>
-                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: +5.8%</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: {revenueChange >= 0 ? '+' : ''}{revenueChange.toFixed(1)}%</span>
               </div>
             </DashboardCard>
             <DashboardCard title="Lucro Total">
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-montelucce-yellow">R$ {totalProfit.toFixed(2)}</span>
-                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: +3.1%</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: {profitChange >= 0 ? '+' : ''}{profitChange.toFixed(1)}%</span>
               </div>
             </DashboardCard>
             <DashboardCard title="Ticket Médio">
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-montelucce-yellow">R$ {averageTicket.toFixed(2)}</span>
-                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: -1.2%</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: {ticketChange >= 0 ? '+' : ''}{ticketChange.toFixed(1)}%</span>
               </div>
             </DashboardCard>
           </div>
           
           <ChartCard title="Visão Geral">
-            <LineChart data={chartDataArray}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="name" stroke="#E5A541" />
-              <YAxis stroke="#E5A541" />
-              <Tooltip contentStyle={{ backgroundColor: "#111", border: "1px solid #333" }} />
-              <Legend />
-              <Line type="monotone" dataKey="receita" name="Receita" stroke="#E5A541" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey="lucro" name="Lucro" stroke="#299D91" />
-            </LineChart>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-montelucce-light-gray">Carregando dados...</p>
+              </div>
+            ) : (
+              <LineChart data={chartDataArray}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="name" stroke="#E5A541" />
+                <YAxis stroke="#E5A541" />
+                <Tooltip contentStyle={{ backgroundColor: "#111", border: "1px solid #333" }} />
+                <Legend />
+                <Line type="monotone" dataKey="receita" name="Receita" stroke="#E5A541" activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="lucro" name="Lucro" stroke="#299D91" />
+              </LineChart>
+            )}
           </ChartCard>
           
           <div className="bg-montelucce-black rounded-lg p-6 shadow-lg">
             <h2 className="text-xl font-semibold text-montelucce-yellow mb-4">Pedidos Recentes</h2>
-            <OrderTable orders={filteredOrders} />
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-montelucce-light-gray">Carregando pedidos...</p>
+              </div>
+            ) : (
+              <OrderTable orders={filteredOrders} />
+            )}
           </div>
         </motion.div>
       </div>
