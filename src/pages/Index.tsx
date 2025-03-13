@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+import ExportButton from '@/components/ExportButton';
 
 // Mock data - substituiria por dados reais da API ou banco de dados
 const generateMockData = (): Order[] => {
@@ -83,7 +84,13 @@ const Index = () => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
-      dailyMap.set(dateString, { date: dateString, revenue: 0, profit: 0 });
+      dailyMap.set(dateString, { 
+        date: dateString, 
+        revenue: 0, 
+        profit: 0,
+        faturamento: 0, 
+        lucro: 0
+      });
     }
     
     // Preencher com dados reais
@@ -91,10 +98,15 @@ const Index = () => {
       const dateString = new Date(order.data_pedido).toISOString().split('T')[0];
       if (dailyMap.has(dateString)) {
         const current = dailyMap.get(dateString);
+        const faturamento = order.preco_venda || order.preco_produto;
+        const lucro = order.lucro_calculado || 0;
+        
         dailyMap.set(dateString, {
           date: dateString,
-          revenue: current.revenue + (order.preco_venda || order.preco_produto),
-          profit: current.profit + (order.lucro_calculado || 0)
+          revenue: current.revenue + faturamento,
+          profit: current.profit + lucro,
+          faturamento: current.faturamento + faturamento,
+          lucro: current.lucro + lucro
         });
       }
     });
@@ -113,14 +125,21 @@ const Index = () => {
         monthlyMap.set(monthYear, {
           name: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date),
           revenue: 0,
-          orders: 0
+          orders: 0,
+          faturamento: 0,
+          lucro: 0
         });
       }
       
       const current = monthlyMap.get(monthYear);
+      const faturamento = order.preco_venda || order.preco_produto;
+      const lucro = order.lucro_calculado || 0;
+      
       monthlyMap.set(monthYear, {
         ...current,
-        revenue: current.revenue + (order.preco_venda || order.preco_produto),
+        revenue: current.revenue + faturamento,
+        faturamento: current.faturamento + faturamento,
+        lucro: current.lucro + lucro,
         orders: current.orders + 1
       });
     });
@@ -202,6 +221,7 @@ const Index = () => {
           title="Receita Semanal" 
           className="lg:col-span-2"
           height={300}
+          action={<ExportButton orders={orders} selectedPeriod={period} />}
         >
           <LineChart data={dailyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(245, 184, 0, 0.1)" />
@@ -225,15 +245,15 @@ const Index = () => {
             <Legend />
             <Line 
               type="monotone" 
-              dataKey="revenue" 
-              name="Receita"
+              dataKey="faturamento" 
+              name="Faturamento"
               stroke="#F5B800" 
               activeDot={{ r: 8 }}
               strokeWidth={2} 
             />
             <Line 
               type="monotone" 
-              dataKey="profit" 
+              dataKey="lucro" 
               name="Lucro"
               stroke="#4CAF50" 
               strokeWidth={2} 
@@ -247,7 +267,10 @@ const Index = () => {
       </div>
       
       <div className="mb-8">
-        <ChartCard title="Desempenho Mensal">
+        <ChartCard 
+          title="Desempenho Mensal"
+          action={<ExportButton orders={orders} selectedPeriod={period} />}
+        >
           <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(245, 184, 0, 0.1)" />
             <XAxis dataKey="name" tick={{ fill: '#8E9196' }} />
@@ -259,13 +282,16 @@ const Index = () => {
                 borderColor: 'rgba(245, 184, 0, 0.2)',
                 color: '#F6F6F7' 
               }}
-              formatter={(value, name) => [
-                name === 'revenue' ? `R$ ${Number(value).toFixed(2)}` : value,
-                name === 'revenue' ? 'Receita' : 'Pedidos'
-              ]}
+              formatter={(value, name) => {
+                if (name === 'faturamento' || name === 'lucro') {
+                  return [`R$ ${Number(value).toFixed(2)}`, name === 'faturamento' ? 'Faturamento' : 'Lucro'];
+                }
+                return [value, name === 'orders' ? 'Pedidos' : name];
+              }}
             />
             <Legend />
-            <Bar yAxisId="left" dataKey="revenue" name="Receita" fill="#F5B800" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="left" dataKey="faturamento" name="Faturamento" fill="#F5B800" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="left" dataKey="lucro" name="Lucro" fill="#4CAF50" radius={[4, 4, 0, 0]} />
             <Bar yAxisId="right" dataKey="orders" name="Pedidos" fill="#9F9EA1" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ChartCard>
