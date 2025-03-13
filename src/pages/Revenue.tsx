@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { motion } from 'framer-motion';
-import { DashboardCard } from '@/components/DashboardCard';
+import DashboardCard from '@/components/DashboardCard';
 import ChartCard from '@/components/ChartCard';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import OrderTable from '@/components/OrderTable';
 import PeriodFilter from '@/components/PeriodFilter';
 import ExportButton from '@/components/ExportButton';
@@ -37,7 +38,7 @@ const generateSampleOrders = (): Order[] => {
       productBrand: brands[Math.floor(Math.random() * brands.length)],
       productPrice,
       shippingCost,
-      date: date.toISOString(),
+      date, // Corrected to use Date object instead of string
       productCost,
       sellingPrice,
       calculatedProfit
@@ -51,7 +52,7 @@ const Revenue: React.FC = () => {
   
   // Filtra pedidos com base no período selecionado
   const filteredOrders = orders.filter((order) => {
-    const orderDate = new Date(order.date);
+    const orderDate = order.date; // No need to convert, already Date object
     const today = new Date();
     
     switch (selectedPeriod) {
@@ -87,7 +88,7 @@ const Revenue: React.FC = () => {
   
   // Dados para o gráfico
   const chartData = filteredOrders.reduce((acc, order) => {
-    const date = format(new Date(order.date), 'dd/MM', { locale: ptBR });
+    const date = format(order.date, 'dd/MM', { locale: ptBR });
     
     if (!acc[date]) {
       acc[date] = {
@@ -130,37 +131,37 @@ const Revenue: React.FC = () => {
           <PeriodFilter value={selectedPeriod} onChange={setSelectedPeriod} />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DashboardCard 
-              title="Receita Total" 
-              value={`R$ ${totalRevenue.toFixed(2)}`}
-              icon="dollar-sign"
-              trend={5.8}
-              trendLabel="vs. período anterior"
-            />
-            <DashboardCard 
-              title="Lucro Total" 
-              value={`R$ ${totalProfit.toFixed(2)}`}
-              icon="trending-up"
-              trend={3.1}
-              trendLabel="vs. período anterior"
-            />
-            <DashboardCard 
-              title="Ticket Médio" 
-              value={`R$ ${averageTicket.toFixed(2)}`}
-              icon="shopping-cart"
-              trend={-1.2}
-              trendLabel="vs. período anterior"
-            />
+            <DashboardCard title="Receita Total">
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-montelucce-yellow">R$ {totalRevenue.toFixed(2)}</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: +5.8%</span>
+              </div>
+            </DashboardCard>
+            <DashboardCard title="Lucro Total">
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-montelucce-yellow">R$ {totalProfit.toFixed(2)}</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: +3.1%</span>
+              </div>
+            </DashboardCard>
+            <DashboardCard title="Ticket Médio">
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-montelucce-yellow">R$ {averageTicket.toFixed(2)}</span>
+                <span className="text-sm text-montelucce-light-gray/70">vs. período anterior: -1.2%</span>
+              </div>
+            </DashboardCard>
           </div>
           
-          <ChartCard 
-            title="Visão Geral"
-            data={chartDataArray}
-            lines={[
-              { key: 'receita', name: 'Receita', color: '#E5A541' },
-              { key: 'lucro', name: 'Lucro', color: '#299D91' }
-            ]}
-          />
+          <ChartCard title="Visão Geral">
+            <LineChart data={chartDataArray}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="name" stroke="#E5A541" />
+              <YAxis stroke="#E5A541" />
+              <Tooltip contentStyle={{ backgroundColor: "#111", border: "1px solid #333" }} />
+              <Legend />
+              <Line type="monotone" dataKey="receita" name="Receita" stroke="#E5A541" activeDot={{ r: 8 }} />
+              <Line type="monotone" dataKey="lucro" name="Lucro" stroke="#299D91" />
+            </LineChart>
+          </ChartCard>
           
           <div className="bg-montelucce-black rounded-lg p-6 shadow-lg">
             <h2 className="text-xl font-semibold text-montelucce-yellow mb-4">Pedidos Recentes</h2>

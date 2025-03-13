@@ -8,13 +8,21 @@ type DashboardCardProps = {
   children: ReactNode;
   className?: string;
   action?: ReactNode;
+  value?: string;
+  icon?: string;
+  trend?: number;
+  trendLabel?: string;
 };
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ 
   title, 
   children, 
   className,
-  action
+  action,
+  value,
+  icon,
+  trend,
+  trendLabel
 }) => {
   return (
     <motion.div
