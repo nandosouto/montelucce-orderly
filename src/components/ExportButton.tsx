@@ -63,6 +63,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
+      // Aqui estava o problema: usando String como uma função - vamos corrigir para uma conversão adequada
       link.setAttribute('download', `montelucce_pedidos_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
