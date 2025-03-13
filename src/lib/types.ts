@@ -1,30 +1,30 @@
 
 export type Order = {
   id: string;
-  customerName: string;
+  nome_cliente: string;
   email: string;
   cpf: string;
-  zipCode: string;
-  address: string;
-  addressNumber: string;
-  addressComplement?: string;
-  productPrice: number;
-  productBrand: string;
-  shippingCost: number;
-  date: Date;
-  calculatedProfit?: number;
-  productCost?: number;
-  sellingPrice?: number;
+  cep: string;
+  endereco: string;
+  numero: string;
+  complemento?: string;
+  preco_produto: number;
+  marca_produto: string;
+  custo_envio: number;
+  data_pedido: Date;
+  lucro_calculado?: number;
+  custo_produto?: number;
+  preco_venda?: number;
 };
 
 export type PeriodFilter = 
-  | 'today' 
-  | 'yesterday' 
-  | 'last7days' 
-  | 'last30days' 
-  | 'last3months' 
-  | 'last6months' 
-  | 'lastyear';
+  | 'hoje' 
+  | 'ontem' 
+  | 'ultimos7dias' 
+  | 'ultimos30dias' 
+  | 'ultimos3meses' 
+  | 'ultimos6meses' 
+  | 'ultimoano';
 
 export type DashboardMetric = {
   label: string;

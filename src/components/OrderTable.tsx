@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type OrderTableProps = {
   orders: Order[];
@@ -15,7 +16,7 @@ type OrderTableProps = {
 
 const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<keyof Order>('date');
+  const [sortField, setSortField] = useState<keyof Order>('data_pedido');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
@@ -35,21 +36,21 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      order.customerName.toLowerCase().includes(searchLower) ||
+      order.nome_cliente.toLowerCase().includes(searchLower) ||
       order.email.toLowerCase().includes(searchLower) ||
       order.cpf.includes(searchTerm) ||
-      order.productBrand.toLowerCase().includes(searchLower)
+      order.marca_produto.toLowerCase().includes(searchLower)
     );
   });
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
-    if (sortField === 'date') {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+    if (sortField === 'data_pedido') {
+      const dateA = new Date(a.data_pedido).getTime();
+      const dateB = new Date(b.data_pedido).getTime();
       return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
     }
 
-    if (sortField === 'productPrice' || sortField === 'shippingCost') {
+    if (sortField === 'preco_produto' || sortField === 'custo_envio') {
       return sortDirection === 'asc'
         ? a[sortField] - b[sortField]
         : b[sortField] - a[sortField];
@@ -69,7 +70,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-montelucce-gray" size={16} />
           <Input
             type="text"
-            placeholder="Search orders..."
+            placeholder="Buscar pedidos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
@@ -81,7 +82,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
             variant="outline"
             className="shrink-0 border-montelucce-yellow/20 text-montelucce-light-gray hover:text-montelucce-yellow"
           >
-            Clear Filter
+            Limpar Filtro
           </Button>
         )}
       </div>
@@ -93,50 +94,50 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
               <TableHead className="w-0 font-medium text-montelucce-light-gray"></TableHead>
               <TableHead 
                 className="font-medium text-montelucce-light-gray cursor-pointer hover:text-montelucce-yellow"
-                onClick={() => handleSort('customerName')}
+                onClick={() => handleSort('nome_cliente')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Customer</span>
-                  {sortField === 'customerName' && (
+                  <span>Cliente</span>
+                  {sortField === 'nome_cliente' && (
                     sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                   )}
                 </div>
               </TableHead>
               <TableHead 
                 className="font-medium text-montelucce-light-gray cursor-pointer hover:text-montelucce-yellow"
-                onClick={() => handleSort('productBrand')}
+                onClick={() => handleSort('marca_produto')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Product</span>
-                  {sortField === 'productBrand' && (
+                  <span>Produto</span>
+                  {sortField === 'marca_produto' && (
                     sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                   )}
                 </div>
               </TableHead>
               <TableHead 
                 className="font-medium text-montelucce-light-gray cursor-pointer hover:text-montelucce-yellow"
-                onClick={() => handleSort('productPrice')}
+                onClick={() => handleSort('preco_produto')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Price</span>
-                  {sortField === 'productPrice' && (
+                  <span>Preço</span>
+                  {sortField === 'preco_produto' && (
                     sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                   )}
                 </div>
               </TableHead>
               <TableHead 
                 className="font-medium text-montelucce-light-gray cursor-pointer hover:text-montelucce-yellow"
-                onClick={() => handleSort('date')}
+                onClick={() => handleSort('data_pedido')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Date</span>
-                  {sortField === 'date' && (
+                  <span>Data</span>
+                  {sortField === 'data_pedido' && (
                     sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                   )}
                 </div>
               </TableHead>
               {onSelectOrder && (
-                <TableHead className="text-right font-medium text-montelucce-light-gray">Actions</TableHead>
+                <TableHead className="text-right font-medium text-montelucce-light-gray">Ações</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -144,7 +145,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
             {sortedOrders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={onSelectOrder ? 6 : 5} className="text-center py-6 text-montelucce-gray">
-                  No orders found.
+                  Nenhum pedido encontrado.
                 </TableCell>
               </TableRow>
             ) : (
@@ -166,14 +167,14 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
                       </Button>
                     </TableCell>
                     <TableCell className="font-medium text-montelucce-light-gray">
-                      {order.customerName}
+                      {order.nome_cliente}
                     </TableCell>
-                    <TableCell className="text-montelucce-light-gray">{order.productBrand}</TableCell>
+                    <TableCell className="text-montelucce-light-gray">{order.marca_produto}</TableCell>
                     <TableCell className="text-montelucce-light-gray">
-                      R$ {order.productPrice.toFixed(2)}
+                      R$ {order.preco_produto.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-montelucce-light-gray">
-                      {format(new Date(order.date), 'dd/MM/yyyy')}
+                      {format(new Date(order.data_pedido), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     {onSelectOrder && (
                       <TableCell className="text-right">
@@ -182,7 +183,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
                           size="sm"
                           className="bg-montelucce-yellow text-montelucce-black hover:bg-montelucce-yellow/90"
                         >
-                          Select
+                          Selecionar
                         </Button>
                       </TableCell>
                     )}
@@ -201,37 +202,37 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, onSelectOrder }) => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                               <div>
                                 <h4 className="text-montelucce-yellow text-xs uppercase tracking-wider mb-1">
-                                  Customer Details
+                                  Detalhes do Cliente
                                 </h4>
                                 <p><span className="text-montelucce-gray">Email:</span> {order.email}</p>
                                 <p><span className="text-montelucce-gray">CPF:</span> {order.cpf}</p>
                               </div>
                               <div>
                                 <h4 className="text-montelucce-yellow text-xs uppercase tracking-wider mb-1">
-                                  Shipping Details
+                                  Detalhes de Entrega
                                 </h4>
-                                <p><span className="text-montelucce-gray">Address:</span> {order.address}, {order.addressNumber}</p>
-                                {order.addressComplement && (
-                                  <p><span className="text-montelucce-gray">Complement:</span> {order.addressComplement}</p>
+                                <p><span className="text-montelucce-gray">Endereço:</span> {order.endereco}, {order.numero}</p>
+                                {order.complemento && (
+                                  <p><span className="text-montelucce-gray">Complemento:</span> {order.complemento}</p>
                                 )}
-                                <p><span className="text-montelucce-gray">Zip Code:</span> {order.zipCode}</p>
+                                <p><span className="text-montelucce-gray">CEP:</span> {order.cep}</p>
                               </div>
                               <div>
                                 <h4 className="text-montelucce-yellow text-xs uppercase tracking-wider mb-1">
-                                  Order Details
+                                  Detalhes do Pedido
                                 </h4>
-                                <p><span className="text-montelucce-gray">Shipping Cost:</span> R$ {order.shippingCost.toFixed(2)}</p>
-                                {order.productCost !== undefined && (
-                                  <p><span className="text-montelucce-gray">Product Cost:</span> R$ {order.productCost.toFixed(2)}</p>
+                                <p><span className="text-montelucce-gray">Custo de Envio:</span> R$ {order.custo_envio.toFixed(2)}</p>
+                                {order.custo_produto !== undefined && (
+                                  <p><span className="text-montelucce-gray">Custo do Produto:</span> R$ {order.custo_produto.toFixed(2)}</p>
                                 )}
-                                {order.sellingPrice !== undefined && (
-                                  <p><span className="text-montelucce-gray">Selling Price:</span> R$ {order.sellingPrice.toFixed(2)}</p>
+                                {order.preco_venda !== undefined && (
+                                  <p><span className="text-montelucce-gray">Preço de Venda:</span> R$ {order.preco_venda.toFixed(2)}</p>
                                 )}
-                                {order.calculatedProfit !== undefined && (
+                                {order.lucro_calculado !== undefined && (
                                   <p>
-                                    <span className="text-montelucce-gray">Profit:</span> 
-                                    <span className={order.calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                      {' '}R$ {order.calculatedProfit.toFixed(2)}
+                                    <span className="text-montelucce-gray">Lucro:</span> 
+                                    <span className={order.lucro_calculado >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                      {' '}R$ {order.lucro_calculado.toFixed(2)}
                                     </span>
                                   </p>
                                 )}

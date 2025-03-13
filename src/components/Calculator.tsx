@@ -9,43 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { TrendingUp, DollarSign, Tag, Truck } from 'lucide-react';
-
-// Mock data generator function (same as in previous files)
-const generateMockData = (): Order[] => {
-  const now = new Date();
-  const orders: Order[] = [];
-  
-  // Generate 20 sample orders for the last 30 days
-  for (let i = 1; i <= 20; i++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-    
-    const productPrice = 100 + Math.floor(Math.random() * 900);
-    const shippingCost = 10 + Math.floor(Math.random() * 40);
-    const productCost = 50 + Math.floor(Math.random() * 200);
-    const sellingPrice = productPrice + Math.floor(Math.random() * 200);
-    
-    orders.push({
-      id: `order-${i}`,
-      customerName: `Customer ${i}`,
-      email: `customer${i}@example.com`,
-      cpf: `${100000000 + i}`,
-      zipCode: `${10000 + i}`,
-      address: `Street ${i}`,
-      addressNumber: `${i}`,
-      addressComplement: i % 3 === 0 ? `Apt ${i}` : undefined,
-      productPrice,
-      productBrand: `Brand ${i % 5 + 1}`,
-      shippingCost,
-      date,
-      productCost: i % 4 === 0 ? undefined : productCost,
-      sellingPrice: i % 4 === 0 ? undefined : sellingPrice,
-      calculatedProfit: i % 4 === 0 ? undefined : sellingPrice - productCost - shippingCost
-    });
-  }
-  
-  return orders;
-};
+import { supabase } from '@/integrations/supabase/client';
 
 const Calculator = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -53,21 +17,62 @@ const Calculator = () => {
   const [productCost, setProductCost] = useState<string>('');
   const [sellingPrice, setSellingPrice] = useState<string>('');
   const [calculatedProfit, setCalculatedProfit] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // In a real app, we would fetch data from an API
-    // For now, we'll use mock data
-    setOrders(generateMockData());
+    // Buscar dados do Supabase
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*')
+          .order('data_pedido', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          const formattedOrders: Order[] = data.map(order => ({
+            id: order.id,
+            nome_cliente: order.nome_cliente,
+            email: order.email,
+            cpf: order.cpf,
+            cep: order.cep,
+            endereco: order.endereco,
+            numero: order.numero,
+            complemento: order.complemento,
+            preco_produto: parseFloat(order.preco_produto),
+            marca_produto: order.marca_produto,
+            custo_envio: parseFloat(order.custo_envio),
+            data_pedido: new Date(order.data_pedido),
+            custo_produto: order.custo_produto ? parseFloat(order.custo_produto) : undefined,
+            preco_venda: order.preco_venda ? parseFloat(order.preco_venda) : undefined,
+            lucro_calculado: order.lucro_calculado ? parseFloat(order.lucro_calculado) : undefined
+          }));
+          
+          setOrders(formattedOrders);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pedidos:', error);
+        toast.error('Erro ao carregar pedidos. Por favor, tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOrders();
   }, []);
   
-  // Reset form when a new order is selected
+  // Resetar formulário quando um novo pedido é selecionado
   useEffect(() => {
     if (selectedOrder) {
-      setProductCost(selectedOrder.productCost?.toString() || '');
-      setSellingPrice(selectedOrder.sellingPrice?.toString() || selectedOrder.productPrice.toString());
+      setProductCost(selectedOrder.custo_produto?.toString() || '');
+      setSellingPrice(selectedOrder.preco_venda?.toString() || selectedOrder.preco_produto.toString());
       
-      if (selectedOrder.productCost && selectedOrder.sellingPrice) {
-        const profit = selectedOrder.sellingPrice - selectedOrder.productCost - selectedOrder.shippingCost;
+      if (selectedOrder.custo_produto && selectedOrder.preco_venda) {
+        const profit = selectedOrder.preco_venda - selectedOrder.custo_produto - selectedOrder.custo_envio;
         setCalculatedProfit(profit);
       } else {
         setCalculatedProfit(null);
@@ -79,14 +84,14 @@ const Calculator = () => {
     }
   }, [selectedOrder]);
   
-  // Calculate profit when inputs change
+  // Calcular lucro quando os inputs mudam
   useEffect(() => {
     if (selectedOrder && productCost && sellingPrice) {
       const cost = parseFloat(productCost);
       const price = parseFloat(sellingPrice);
       
       if (!isNaN(cost) && !isNaN(price)) {
-        const profit = price - cost - selectedOrder.shippingCost;
+        const profit = price - cost - selectedOrder.custo_envio;
         setCalculatedProfit(profit);
       } else {
         setCalculatedProfit(null);
@@ -100,14 +105,14 @@ const Calculator = () => {
     setSelectedOrder(order);
   };
   
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
     if (!selectedOrder) {
-      toast.error('Please select an order first');
+      toast.error('Por favor, selecione um pedido primeiro');
       return;
     }
     
     if (!productCost || !sellingPrice) {
-      toast.error('Please fill in all fields');
+      toast.error('Por favor, preencha todos os campos');
       return;
     }
     
@@ -115,31 +120,50 @@ const Calculator = () => {
     const price = parseFloat(sellingPrice);
     
     if (isNaN(cost) || isNaN(price)) {
-      toast.error('Please enter valid numbers');
+      toast.error('Por favor, insira números válidos');
       return;
     }
     
-    // Calculate profit
-    const profit = price - cost - selectedOrder.shippingCost;
+    // Calcular lucro
+    const profit = price - cost - selectedOrder.custo_envio;
     
-    // Update the selected order in our orders array
-    const updatedOrders = orders.map(order => {
-      if (order.id === selectedOrder.id) {
-        return {
-          ...order,
-          productCost: cost,
-          sellingPrice: price,
-          calculatedProfit: profit
-        };
+    try {
+      // Atualizar o pedido no Supabase
+      const { error } = await supabase
+        .from('pedidos')
+        .update({
+          custo_produto: cost,
+          preco_venda: price,
+          lucro_calculado: profit
+        })
+        .eq('id', selectedOrder.id);
+      
+      if (error) {
+        throw error;
       }
-      return order;
-    });
-    
-    setOrders(updatedOrders);
-    setSelectedOrder(prev => prev ? { ...prev, productCost: cost, sellingPrice: price, calculatedProfit: profit } : null);
-    setCalculatedProfit(profit);
-    
-    toast.success('Profit calculated successfully');
+      
+      // Atualizar o pedido na lista local
+      const updatedOrders = orders.map(order => {
+        if (order.id === selectedOrder.id) {
+          return {
+            ...order,
+            custo_produto: cost,
+            preco_venda: price,
+            lucro_calculado: profit
+          };
+        }
+        return order;
+      });
+      
+      setOrders(updatedOrders);
+      setSelectedOrder(prev => prev ? { ...prev, custo_produto: cost, preco_venda: price, lucro_calculado: profit } : null);
+      setCalculatedProfit(profit);
+      
+      toast.success('Lucro calculado com sucesso');
+    } catch (error) {
+      console.error('Erro ao atualizar pedido:', error);
+      toast.error('Erro ao salvar cálculo. Por favor, tente novamente.');
+    }
   };
   
   const handleReset = () => {
@@ -153,13 +177,19 @@ const Calculator = () => {
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <DashboardCard title="Select Order">
-            <OrderTable orders={orders} onSelectOrder={handleSelectOrder} />
+          <DashboardCard title="Selecionar Pedido">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-montelucce-light-gray">Carregando pedidos...</p>
+              </div>
+            ) : (
+              <OrderTable orders={orders} onSelectOrder={handleSelectOrder} />
+            )}
           </DashboardCard>
         </div>
         
         <div className="space-y-6">
-          <DashboardCard title="Calculator">
+          <DashboardCard title="Calculadora">
             {selectedOrder ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -168,12 +198,12 @@ const Calculator = () => {
                 className="space-y-6"
               >
                 <div className="bg-montelucce-yellow/5 p-4 rounded-lg border border-montelucce-yellow/10">
-                  <h3 className="font-medium text-montelucce-light-gray mb-2">Order Details</h3>
+                  <h3 className="font-medium text-montelucce-light-gray mb-2">Detalhes do Pedido</h3>
                   <p className="text-sm text-montelucce-gray">
-                    <span className="block">Customer: {selectedOrder.customerName}</span>
-                    <span className="block">Product: {selectedOrder.productBrand}</span>
+                    <span className="block">Cliente: {selectedOrder.nome_cliente}</span>
+                    <span className="block">Produto: {selectedOrder.marca_produto}</span>
                     <span className="block">
-                      Shipping Cost: R$ {selectedOrder.shippingCost.toFixed(2)}
+                      Custo de Envio: R$ {selectedOrder.custo_envio.toFixed(2)}
                     </span>
                   </p>
                 </div>
@@ -182,11 +212,11 @@ const Calculator = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-montelucce-light-gray flex items-center gap-2">
                       <Tag size={16} className="text-montelucce-yellow" />
-                      Product Cost (R$)
+                      Custo do Produto (R$)
                     </label>
                     <Input
                       type="number"
-                      placeholder="Enter product cost"
+                      placeholder="Digite o custo do produto"
                       value={productCost}
                       onChange={(e) => setProductCost(e.target.value)}
                       className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
@@ -196,11 +226,11 @@ const Calculator = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-montelucce-light-gray flex items-center gap-2">
                       <DollarSign size={16} className="text-montelucce-yellow" />
-                      Selling Price (R$)
+                      Preço de Venda (R$)
                     </label>
                     <Input
                       type="number"
-                      placeholder="Enter selling price"
+                      placeholder="Digite o preço de venda"
                       value={sellingPrice}
                       onChange={(e) => setSellingPrice(e.target.value)}
                       className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
@@ -210,11 +240,11 @@ const Calculator = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-montelucce-light-gray flex items-center gap-2">
                       <Truck size={16} className="text-montelucce-yellow" />
-                      Shipping Cost (R$)
+                      Custo de Envio (R$)
                     </label>
                     <Input
                       type="number"
-                      value={selectedOrder.shippingCost.toFixed(2)}
+                      value={selectedOrder.custo_envio.toFixed(2)}
                       readOnly
                       disabled
                       className="bg-montelucce-black/50 border-montelucce-yellow/20 text-montelucce-gray"
@@ -227,7 +257,7 @@ const Calculator = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp size={16} className="text-montelucce-yellow" />
                       <span className="font-medium text-montelucce-light-gray">
-                        Profit:
+                        Lucro:
                       </span>
                     </div>
                     <span className={`text-xl font-semibold ${
@@ -249,21 +279,21 @@ const Calculator = () => {
                     onClick={handleCalculate}
                     className="flex-1 bg-montelucce-yellow text-montelucce-black hover:bg-montelucce-yellow/90"
                   >
-                    Calculate
+                    Calcular
                   </Button>
                   <Button
                     onClick={handleReset}
                     variant="outline"
                     className="flex-1 border-montelucce-yellow/20 text-montelucce-light-gray hover:text-montelucce-yellow"
                   >
-                    Reset
+                    Limpar
                   </Button>
                 </div>
               </motion.div>
             ) : (
               <div className="text-center py-12">
                 <p className="text-montelucce-gray mb-4">
-                  Select an order from the table to calculate profit
+                  Selecione um pedido da tabela para calcular o lucro
                 </p>
               </div>
             )}
@@ -275,49 +305,49 @@ const Calculator = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <DashboardCard title="Margin Analysis">
+              <DashboardCard title="Análise de Margem">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-montelucce-gray">Product Cost:</span>
+                    <span className="text-montelucce-gray">Custo do Produto:</span>
                     <span className="text-montelucce-light-gray">
                       R$ {parseFloat(productCost).toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-montelucce-gray">Shipping Cost:</span>
+                    <span className="text-montelucce-gray">Custo de Envio:</span>
                     <span className="text-montelucce-light-gray">
-                      R$ {selectedOrder.shippingCost.toFixed(2)}
+                      R$ {selectedOrder.custo_envio.toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-montelucce-gray">Total Cost:</span>
+                    <span className="text-montelucce-gray">Custo Total:</span>
                     <span className="text-montelucce-light-gray">
-                      R$ {(parseFloat(productCost) + selectedOrder.shippingCost).toFixed(2)}
+                      R$ {(parseFloat(productCost) + selectedOrder.custo_envio).toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="border-t border-montelucce-yellow/10 pt-4 flex justify-between items-center">
-                    <span className="text-montelucce-gray">Selling Price:</span>
+                    <span className="text-montelucce-gray">Preço de Venda:</span>
                     <span className="text-montelucce-light-gray">
                       R$ {parseFloat(sellingPrice).toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-montelucce-gray">Profit:</span>
+                    <span className="text-montelucce-gray">Lucro:</span>
                     <span className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
                       R$ {calculatedProfit.toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-montelucce-gray">Margin:</span>
+                    <span className="text-montelucce-gray">Margem:</span>
                     <span className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
                       {parseFloat(sellingPrice) > 0
                         ? `${((calculatedProfit / parseFloat(sellingPrice)) * 100).toFixed(2)}%`
-                        : '0.00%'}
+                        : '0,00%'}
                     </span>
                   </div>
                 </div>

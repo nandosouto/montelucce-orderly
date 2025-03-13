@@ -19,11 +19,10 @@ type ExportButtonProps = {
 
 const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) => {
   const handleExport = (format: 'csv' | 'excel') => {
-    // In a real app, we'd implement the actual export logic
-    // For now, we'll simulate the export with a console log
+    // Em um app real, implementaríamos a lógica de exportação
     console.log(`Exportando ${orders.length} pedidos para o período: ${selectedPeriod} no formato ${format}`);
     
-    // Basic CSV export example
+    // Exemplo básico de exportação CSV
     if (format === 'csv') {
       const headers = [
         'Nome do Cliente',
@@ -42,24 +41,24 @@ const ExportButton: React.FC<ExportButtonProps> = ({ orders, selectedPeriod }) =
 
       const csvRows = orders.map(order => {
         return [
-          order.customerName,
+          order.nome_cliente,
           order.email,
           order.cpf,
-          `${order.address}, ${order.addressNumber} ${order.addressComplement || ''}`,
-          order.zipCode,
-          order.productBrand,
-          order.productPrice.toFixed(2),
-          order.shippingCost.toFixed(2),
-          new Date(order.date).toLocaleDateString('pt-BR'),
-          order.productCost !== undefined ? order.productCost.toFixed(2) : '',
-          order.sellingPrice !== undefined ? order.sellingPrice.toFixed(2) : '',
-          order.calculatedProfit !== undefined ? order.calculatedProfit.toFixed(2) : ''
+          `${order.endereco}, ${order.numero} ${order.complemento || ''}`,
+          order.cep,
+          order.marca_produto,
+          order.preco_produto.toFixed(2),
+          order.custo_envio.toFixed(2),
+          format(new Date(order.data_pedido), 'dd/MM/yyyy', { locale: ptBR }),
+          order.custo_produto !== undefined ? order.custo_produto.toFixed(2) : '',
+          order.preco_venda !== undefined ? order.preco_venda.toFixed(2) : '',
+          order.lucro_calculado !== undefined ? order.lucro_calculado.toFixed(2) : ''
         ].join(',');
       });
 
       const csvContent = [headers, ...csvRows].join('\n');
       
-      // Create a blob and download the file
+      // Criar um blob e baixar o arquivo
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

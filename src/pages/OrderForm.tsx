@@ -4,20 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 const OrderForm = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    customerName: '',
+    nome_cliente: '',
     email: '',
     cpf: '',
-    zipCode: '',
-    address: '',
-    addressNumber: '',
-    addressComplement: '',
-    productPrice: '',
-    productBrand: '',
-    shippingCost: ''
+    cep: '',
+    endereco: '',
+    numero: '',
+    complemento: '',
+    preco_produto: '',
+    marca_produto: '',
+    custo_envio: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,22 +27,49 @@ const OrderForm = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // Validate form
-    if (!formData.customerName || !formData.email || !formData.cpf || 
-        !formData.zipCode || !formData.address || !formData.addressNumber || 
-        !formData.productPrice || !formData.productBrand || !formData.shippingCost) {
-      toast.error('Please fill in all required fields');
+    // Validar formulário
+    if (!formData.nome_cliente || !formData.email || !formData.cpf || 
+        !formData.cep || !formData.endereco || !formData.numero || 
+        !formData.preco_produto || !formData.marca_produto || !formData.custo_envio) {
+      toast.error('Por favor, preencha todos os campos obrigatórios');
+      setIsLoading(false);
       return;
     }
     
-    // In a real implementation, this would send data to an API
-    // For now, we'll simulate a successful submission
-    
-    // Show success message
-    setIsSubmitted(true);
+    try {
+      // Salvar no Supabase
+      const { error } = await supabase
+        .from('pedidos')
+        .insert({
+          nome_cliente: formData.nome_cliente,
+          email: formData.email,
+          cpf: formData.cpf,
+          cep: formData.cep,
+          endereco: formData.endereco,
+          numero: formData.numero,
+          complemento: formData.complemento || null,
+          preco_produto: parseFloat(formData.preco_produto),
+          marca_produto: formData.marca_produto,
+          custo_envio: parseFloat(formData.custo_envio)
+        });
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Mostrar mensagem de sucesso
+      toast.success('Pedido enviado com sucesso!');
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Erro ao salvar pedido:', error);
+      toast.error('Erro ao enviar pedido. Por favor, tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -52,8 +81,8 @@ const OrderForm = () => {
           transition={{ duration: 0.5 }}
           className="max-w-md w-full bg-montelucce-black/50 border border-montelucce-yellow/20 rounded-lg p-8 text-center"
         >
-          <h2 className="text-2xl font-semibold text-montelucce-yellow mb-4">Thank you for your order!</h2>
-          <p className="text-montelucce-light-gray">Please wait for your order to be shipped.</p>
+          <h2 className="text-2xl font-semibold text-montelucce-yellow mb-4">Obrigado pelo seu pedido!</h2>
+          <p className="text-montelucce-light-gray">Por favor, aguarde o envio do seu pedido.</p>
         </motion.div>
       </div>
     );
@@ -76,23 +105,23 @@ const OrderForm = () => {
           transition={{ duration: 0.5 }}
           className="bg-montelucce-black/50 border border-montelucce-yellow/20 rounded-lg p-6 shadow-lg"
         >
-          <h1 className="text-2xl font-semibold text-montelucce-yellow mb-6 text-center">Order Information</h1>
+          <h1 className="text-2xl font-semibold text-montelucce-yellow mb-6 text-center">Informações do Pedido</h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <h2 className="text-xl font-medium text-montelucce-light-gray border-b border-montelucce-yellow/10 pb-2">
-                Personal Information
+                Informações Pessoais
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="customerName" className="block text-sm font-medium text-montelucce-light-gray">
-                    Full Name *
+                  <label htmlFor="nome_cliente" className="block text-sm font-medium text-montelucce-light-gray">
+                    Nome Completo *
                   </label>
                   <Input
-                    id="customerName"
-                    name="customerName"
-                    value={formData.customerName}
+                    id="nome_cliente"
+                    name="nome_cliente"
+                    value={formData.nome_cliente}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -116,7 +145,7 @@ const OrderForm = () => {
                 
                 <div className="space-y-2">
                   <label htmlFor="cpf" className="block text-sm font-medium text-montelucce-light-gray">
-                    CPF (Brazilian Tax ID) *
+                    CPF *
                   </label>
                   <Input
                     id="cpf"
@@ -132,18 +161,18 @@ const OrderForm = () => {
             
             <div className="space-y-4">
               <h2 className="text-xl font-medium text-montelucce-light-gray border-b border-montelucce-yellow/10 pb-2">
-                Shipping Information
+                Informações de Entrega
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="zipCode" className="block text-sm font-medium text-montelucce-light-gray">
-                    ZIP Code *
+                  <label htmlFor="cep" className="block text-sm font-medium text-montelucce-light-gray">
+                    CEP *
                   </label>
                   <Input
-                    id="zipCode"
-                    name="zipCode"
-                    value={formData.zipCode}
+                    id="cep"
+                    name="cep"
+                    value={formData.cep}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -151,13 +180,13 @@ const OrderForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="address" className="block text-sm font-medium text-montelucce-light-gray">
-                    Street *
+                  <label htmlFor="endereco" className="block text-sm font-medium text-montelucce-light-gray">
+                    Endereço *
                   </label>
                   <Input
-                    id="address"
-                    name="address"
-                    value={formData.address}
+                    id="endereco"
+                    name="endereco"
+                    value={formData.endereco}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -165,13 +194,13 @@ const OrderForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="addressNumber" className="block text-sm font-medium text-montelucce-light-gray">
-                    Number *
+                  <label htmlFor="numero" className="block text-sm font-medium text-montelucce-light-gray">
+                    Número *
                   </label>
                   <Input
-                    id="addressNumber"
-                    name="addressNumber"
-                    value={formData.addressNumber}
+                    id="numero"
+                    name="numero"
+                    value={formData.numero}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -179,13 +208,13 @@ const OrderForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="addressComplement" className="block text-sm font-medium text-montelucce-light-gray">
-                    Complement
+                  <label htmlFor="complemento" className="block text-sm font-medium text-montelucce-light-gray">
+                    Complemento
                   </label>
                   <Input
-                    id="addressComplement"
-                    name="addressComplement"
-                    value={formData.addressComplement}
+                    id="complemento"
+                    name="complemento"
+                    value={formData.complemento}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                   />
@@ -195,18 +224,18 @@ const OrderForm = () => {
             
             <div className="space-y-4">
               <h2 className="text-xl font-medium text-montelucce-light-gray border-b border-montelucce-yellow/10 pb-2">
-                Product Information
+                Informações do Produto
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="productBrand" className="block text-sm font-medium text-montelucce-light-gray">
-                    Product Brand *
+                  <label htmlFor="marca_produto" className="block text-sm font-medium text-montelucce-light-gray">
+                    Marca do Produto *
                   </label>
                   <Input
-                    id="productBrand"
-                    name="productBrand"
-                    value={formData.productBrand}
+                    id="marca_produto"
+                    name="marca_produto"
+                    value={formData.marca_produto}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -214,16 +243,16 @@ const OrderForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="productPrice" className="block text-sm font-medium text-montelucce-light-gray">
-                    Product Price (R$) *
+                  <label htmlFor="preco_produto" className="block text-sm font-medium text-montelucce-light-gray">
+                    Preço do Produto (R$) *
                   </label>
                   <Input
-                    id="productPrice"
-                    name="productPrice"
+                    id="preco_produto"
+                    name="preco_produto"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={formData.productPrice}
+                    value={formData.preco_produto}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -231,16 +260,16 @@ const OrderForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="shippingCost" className="block text-sm font-medium text-montelucce-light-gray">
-                    Shipping Cost (R$) *
+                  <label htmlFor="custo_envio" className="block text-sm font-medium text-montelucce-light-gray">
+                    Custo de Envio (R$) *
                   </label>
                   <Input
-                    id="shippingCost"
-                    name="shippingCost"
+                    id="custo_envio"
+                    name="custo_envio"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={formData.shippingCost}
+                    value={formData.custo_envio}
                     onChange={handleChange}
                     className="bg-montelucce-black border-montelucce-yellow/20 text-montelucce-light-gray"
                     required
@@ -252,9 +281,10 @@ const OrderForm = () => {
             <div className="pt-4 flex justify-center">
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full md:w-auto bg-montelucce-yellow text-montelucce-black hover:bg-montelucce-yellow/90 text-lg py-6 px-8"
               >
-                Submit Order
+                {isLoading ? 'Enviando...' : 'Enviar Pedido'}
               </Button>
             </div>
           </form>
