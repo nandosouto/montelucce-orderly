@@ -14,66 +14,66 @@ import { format, subDays, subMonths } from 'date-fns';
 
 // Função para gerar dados de pedidos aleatórios para demonstração
 const generateSampleOrders = (): Order[] => {
-  const brands = ['Montelucce', 'Malbec', 'Piccolo Mondo', 'Chianti'];
-  const names = ['João Silva', 'Maria Oliveira', 'Carlos Santos', 'Ana Pereira', 'Pedro Costa'];
+  const marcas = ['Montelucce', 'Malbec', 'Piccolo Mondo', 'Chianti'];
+  const nomes = ['João Silva', 'Maria Oliveira', 'Carlos Santos', 'Ana Pereira', 'Pedro Costa'];
   
   // Gera 20 pedidos de amostra
   return Array.from({ length: 20 }, (_, i) => {
-    const date = subDays(new Date(), Math.floor(Math.random() * 180)); // Entre hoje e 180 dias atrás
-    const productPrice = 50 + Math.floor(Math.random() * 200);
-    const shippingCost = 15 + Math.floor(Math.random() * 25);
-    const productCost = productPrice * 0.6; // Custo é 60% do preço
-    const sellingPrice = productPrice + shippingCost;
-    const calculatedProfit = sellingPrice - productCost - shippingCost;
+    const dataPedido = subDays(new Date(), Math.floor(Math.random() * 180)); // Entre hoje e 180 dias atrás
+    const precoProduto = 50 + Math.floor(Math.random() * 200);
+    const custoEnvio = 15 + Math.floor(Math.random() * 25);
+    const custoProduto = precoProduto * 0.6; // Custo é 60% do preço
+    const precoVenda = precoProduto + custoEnvio;
+    const lucroCalculado = precoVenda - custoProduto - custoEnvio;
     
     return {
-      id: `order-${i + 1}`,
-      customerName: names[Math.floor(Math.random() * names.length)],
+      id: `pedido-${i + 1}`,
+      nome_cliente: nomes[Math.floor(Math.random() * nomes.length)],
       email: `cliente${i + 1}@exemplo.com`,
       cpf: `${Math.floor(Math.random() * 999)}.${Math.floor(Math.random() * 999)}.${Math.floor(Math.random() * 999)}-${Math.floor(Math.random() * 99)}`,
-      address: `Rua Exemplo, ${i + 1}`,
-      addressNumber: `${Math.floor(Math.random() * 1000)}`,
-      addressComplement: Math.random() > 0.5 ? `Apto ${Math.floor(Math.random() * 100)}` : '',
-      zipCode: `${Math.floor(Math.random() * 10000)}-${Math.floor(Math.random() * 1000)}`,
-      productBrand: brands[Math.floor(Math.random() * brands.length)],
-      productPrice,
-      shippingCost,
-      date, // Corrected to use Date object instead of string
-      productCost,
-      sellingPrice,
-      calculatedProfit
+      endereco: `Rua Exemplo, ${i + 1}`,
+      numero: `${Math.floor(Math.random() * 1000)}`,
+      complemento: Math.random() > 0.5 ? `Apto ${Math.floor(Math.random() * 100)}` : undefined,
+      cep: `${Math.floor(Math.random() * 10000)}-${Math.floor(Math.random() * 1000)}`,
+      marca_produto: marcas[Math.floor(Math.random() * marcas.length)],
+      preco_produto: precoProduto,
+      custo_envio: custoEnvio,
+      data_pedido: dataPedido,
+      custo_produto: custoProduto,
+      preco_venda: precoVenda,
+      lucro_calculado: lucroCalculado
     };
   });
 };
 
 const Revenue: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilterType>('last30days');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilterType>('ultimos30dias');
   const orders = generateSampleOrders();
   
   // Filtra pedidos com base no período selecionado
   const filteredOrders = orders.filter((order) => {
-    const orderDate = order.date; // No need to convert, already Date object
+    const orderDate = order.data_pedido;
     const today = new Date();
     
     switch (selectedPeriod) {
-      case 'today':
+      case 'hoje':
         return format(orderDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-      case 'yesterday':
+      case 'ontem':
         const yesterday = subDays(today, 1);
         return format(orderDate, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd');
-      case 'last7days':
+      case 'ultimos7dias':
         const last7days = subDays(today, 7);
         return orderDate >= last7days;
-      case 'last30days':
+      case 'ultimos30dias':
         const last30days = subDays(today, 30);
         return orderDate >= last30days;
-      case 'last3months':
+      case 'ultimos3meses':
         const last3months = subMonths(today, 3);
         return orderDate >= last3months;
-      case 'last6months':
+      case 'ultimos6meses':
         const last6months = subMonths(today, 6);
         return orderDate >= last6months;
-      case 'lastyear':
+      case 'ultimoano':
         const lastYear = subMonths(today, 12);
         return orderDate >= lastYear;
       default:
@@ -82,13 +82,13 @@ const Revenue: React.FC = () => {
   });
   
   // Calcula métricas para os cards
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.sellingPrice || 0), 0);
-  const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.calculatedProfit || 0), 0);
+  const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.preco_venda || 0), 0);
+  const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.lucro_calculado || 0), 0);
   const averageTicket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
   
   // Dados para o gráfico
   const chartData = filteredOrders.reduce((acc, order) => {
-    const date = format(order.date, 'dd/MM', { locale: ptBR });
+    const date = format(order.data_pedido, 'dd/MM', { locale: ptBR });
     
     if (!acc[date]) {
       acc[date] = {
@@ -98,8 +98,8 @@ const Revenue: React.FC = () => {
       };
     }
     
-    acc[date].receita += order.sellingPrice || 0;
-    acc[date].lucro += order.calculatedProfit || 0;
+    acc[date].receita += order.preco_venda || 0;
+    acc[date].lucro += order.lucro_calculado || 0;
     
     return acc;
   }, {} as Record<string, { name: string; receita: number; lucro: number }>);

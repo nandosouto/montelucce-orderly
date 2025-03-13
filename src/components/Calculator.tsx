@@ -43,13 +43,13 @@ const Calculator = () => {
             endereco: order.endereco,
             numero: order.numero,
             complemento: order.complemento,
-            preco_produto: parseFloat(order.preco_produto),
+            preco_produto: Number(order.preco_produto),
             marca_produto: order.marca_produto,
-            custo_envio: parseFloat(order.custo_envio),
+            custo_envio: Number(order.custo_envio),
             data_pedido: new Date(order.data_pedido),
-            custo_produto: order.custo_produto ? parseFloat(order.custo_produto) : undefined,
-            preco_venda: order.preco_venda ? parseFloat(order.preco_venda) : undefined,
-            lucro_calculado: order.lucro_calculado ? parseFloat(order.lucro_calculado) : undefined
+            custo_produto: order.custo_produto ? Number(order.custo_produto) : undefined,
+            preco_venda: order.preco_venda ? Number(order.preco_venda) : undefined,
+            lucro_calculado: order.lucro_calculado ? Number(order.lucro_calculado) : undefined
           }));
           
           setOrders(formattedOrders);
